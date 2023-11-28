@@ -22,16 +22,18 @@ class Xor:
         return self.encrypt(data)
 
 
-def guess_keysize(data: memoryview, sample_size = 4) -> list[int]:
+def guess_keysize(data: memoryview, max_keysize = 40, chunk_samples = 4) -> list[int]:
     """Guess the keysize used to encryt data, and return them in descending order"""
     guesses = []
-    for n in range(1, 40):
-        chunks = list(islice(chunked(data, n), sample_size))
+    for keysize in range(1, max_keysize):
+        chunks = list(islice(chunked(data, keysize), chunk_samples))
         edit_distance_sum = 0
-        for (a, b) in permutations(range(sample_size), 2):
+        sample_count = 0
+        for (a, b) in permutations(range(chunk_samples), 2):
             edit_distance_sum += hamming_distance(chunks[a], chunks[b])
-        guesses.append((n, edit_distance_sum / n))
-        # print(f"HD: {hd}  nHD: {hd / n}")
+            sample_count += 1
+        normalized_edit_distance = edit_distance_sum / keysize / sample_count
+        guesses.append((keysize, normalized_edit_distance))
     
     guesses.sort(key=lambda x: x[1])
     return guesses
